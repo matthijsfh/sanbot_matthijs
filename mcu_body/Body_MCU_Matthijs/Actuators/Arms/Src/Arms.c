@@ -5,12 +5,22 @@
 #include "RGBLeds.h"
 #include <stdlib.h>  // For abs()
 
-struct Arm_State_Type LeftArm_State;
-struct Arm_State_Type RightArm_State;
+volatile struct Arm_State_Type LeftArm_State;
+volatile struct Arm_State_Type RightArm_State;
+
+volatile int LeftSpeed;
+volatile int LeftLimitBack;
+volatile int LeftLimitUp;
+
+volatile int RightSpeed;
+volatile int RightLimitBack;
+volatile int RightLimitUp;
+
+volatile int combined;
 
 void Generic_Arm_PositionSetpoint(enum ENUM_BodyParts BodyPart, char HighByte, char LowByte)
 {
-	short combined = ((unsigned char)HighByte << 8) | (unsigned char)LowByte;
+	combined = ((int)HighByte << 8) + (int)LowByte;
 
 	if (BodyPart == LeftArm)
 	{
@@ -86,13 +96,13 @@ void Arms_Update20Hz(struct Encoders_Data_Type *EncoderData)
 	//--------------------------------------------------------------------------------
 	// Left arm
 	//--------------------------------------------------------------------------------
-	int LeftSpeed = 35;
+	LeftSpeed = 35;
 
 	//--------------------------------------------------------------------------------
 	// Read limit switches
 	//--------------------------------------------------------------------------------
-	int LeftLimitBack = HAL_GPIO_ReadPin(LeftLimitBack_GPIO_Port,LeftLimitBack_Pin);
-	int LeftLimitUp = HAL_GPIO_ReadPin(LeftLimitUp_GPIO_Port, LeftLimitUp_Pin);
+	LeftLimitBack = HAL_GPIO_ReadPin(LeftLimitBack_GPIO_Port,LeftLimitBack_Pin);
+	LeftLimitUp = HAL_GPIO_ReadPin(LeftLimitUp_GPIO_Port, LeftLimitUp_Pin);
 
 	//--------------------------------------------------------------------------------
 	// Invert direction. Make UP = +
@@ -187,13 +197,13 @@ void Arms_Update20Hz(struct Encoders_Data_Type *EncoderData)
 	//--------------------------------------------------------------------------------
 	// Right arm
 	//--------------------------------------------------------------------------------
-	int RightSpeed = 35;
+	RightSpeed = 35;
 
 	//--------------------------------------------------------------------------------
 	// Read limit switches
 	//--------------------------------------------------------------------------------
-	int RightLimitBack = HAL_GPIO_ReadPin(RightLimitBack_GPIO_Port, RightLimitBack_Pin);
-	int RightLimitUp = HAL_GPIO_ReadPin(RightLimitUp_GPIO_Port, RightLimitUp_Pin);
+	RightLimitBack = HAL_GPIO_ReadPin(RightLimitBack_GPIO_Port, RightLimitBack_Pin);
+	RightLimitUp = HAL_GPIO_ReadPin(RightLimitUp_GPIO_Port, RightLimitUp_Pin);
 
 	RightArm_State.ActualPosition = EncoderData->Encoder[4];
 
@@ -239,13 +249,13 @@ void Arms_Update20Hz(struct Encoders_Data_Type *EncoderData)
 		if (RightArm_State.ErrorPosition > 15)
 		{
 			RightArm_State.Direction = Arm_Up;
-			RightArm_State.PWM_Output = (100 - abs(35));
+			RightArm_State.PWM_Output = (100 - abs(RightSpeed));
 			GenericArms_HAL_Brake(False, RightArm);
 		}
 		else if (RightArm_State.ErrorPosition < -15)
 		{
 			RightArm_State.Direction = Arm_Down;
-			RightArm_State.PWM_Output = (100 - abs(35));
+			RightArm_State.PWM_Output = (100 - abs(RightSpeed));
 			GenericArms_HAL_Brake(False, RightArm);
 		}
 		else
@@ -300,6 +310,7 @@ void Arms_Update20Hz(struct Encoders_Data_Type *EncoderData)
 void LeftArm_Init(TIM_HandleTypeDef *htim)
 {
 	LeftArm_State.ArmDirection = Arm_Up;
+	LeftArm_State.Direction = Arm_Up;  // Initialize Direction field
 	LeftArm_State.MotionState = Motion_Idle;
 	LeftArm_State.HomeState = NotHomed;
 
@@ -307,6 +318,9 @@ void LeftArm_Init(TIM_HandleTypeDef *htim)
 	LeftArm_State.TIM_CHANNEL = TIM_CHANNEL_1;
 
 	LeftArm_State.TargetPosition = 0;
+	LeftArm_State.PWM_Output = 0;
+	LeftArm_State.BrakeTimer = 0;
+	LeftArm_State.HomeCounter = 0;
 
 	HAL_TIM_Base_Start(htim);
 	HAL_TIM_PWM_Start(htim, TIM_CHANNEL_1);
@@ -338,6 +352,7 @@ void LeftArm_Abort()
 void RightArm_Init(TIM_HandleTypeDef *htim)
 {
 	RightArm_State.ArmDirection = Arm_Up;
+	RightArm_State.Direction = Arm_Up;  // Initialize Direction field
 	RightArm_State.MotionState = Motion_Idle;
 	RightArm_State.HomeState = NotHomed;
 
@@ -345,6 +360,9 @@ void RightArm_Init(TIM_HandleTypeDef *htim)
 	RightArm_State.TIM_CHANNEL = TIM_CHANNEL_2;
 
 	RightArm_State.TargetPosition = 0;
+	RightArm_State.PWM_Output = 0;
+	RightArm_State.BrakeTimer = 0;
+	RightArm_State.HomeCounter = 0;
 
 	HAL_TIM_Base_Start(htim);
 	HAL_TIM_PWM_Start(htim, TIM_CHANNEL_2);
