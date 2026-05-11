@@ -441,6 +441,26 @@ class SaraGUI:
         )
         self.button_TOUCH_RRear.grid(row=row_count, column=col_count, sticky="w")
 
+        row_count += 1
+
+        self.button_TOUCH_Left_Arm = tk.Button(
+            self.frame,
+            height=1,
+            width=button_width,
+            text="Touch Left Arm",
+        )
+        self.button_TOUCH_Left_Arm.grid(row=row_count, column=col_count, sticky="w")
+
+        row_count += 1
+
+        self.button_TOUCH_Right_Arm = tk.Button(
+            self.frame,
+            height=1,
+            width=button_width,
+            text="Touch Right Arm",
+        )
+        self.button_TOUCH_Right_Arm.grid(row=row_count, column=col_count, sticky="w")
+
         # --------------------------------------------------------------------------------------
         # Head
         # --------------------------------------------------------------------------------------
@@ -788,6 +808,75 @@ class SaraGUI:
         # )
         # self.stream_area.grid(row=20, column=0, columnspan=10, sticky="w")
 
+        # --------------------------------------------------------------------------------------
+        # Moves
+        # --------------------------------------------------------------------------------------
+        row_count += 3
+
+        self.button_Move_BACK = tk.Button(
+            self.frame,
+            height=1,
+            width=button_width,
+            text="Move Forward",
+            command=lambda: robot.base.move(Sideways_Velocity=0, Forward_Velocity=50, Rotation_Velocity=0),
+        )
+        self.button_Move_BACK.grid(row=row_count, column=col_count, sticky="w")
+
+        row_count += 1
+
+        self.button_Move_BACK = tk.Button(
+            self.frame,
+            height=1,
+            width=button_width,
+            text="Move Backward",
+            command=lambda: robot.base.move(Sideways_Velocity=0, Forward_Velocity=-50, Rotation_Velocity=0),
+        )
+        self.button_Move_BACK.grid(row=row_count, column=col_count, sticky="w")
+
+        row_count += 1
+
+        self.button_Move_LEFT = tk.Button(
+            self.frame,
+            height=1,
+            width=button_width,
+            text="Move Left",
+            command=lambda: robot.base.move(Sideways_Velocity=-50, Forward_Velocity=0, Rotation_Velocity=0),
+        )
+        self.button_Move_LEFT.grid(row=row_count, column=col_count, sticky="w")
+
+        row_count += 1
+
+        self.button_Move_RIGHT = tk.Button(
+            self.frame,
+            height=1,
+            width=button_width,
+            text="Move Right",
+            command=lambda: robot.base.move(Sideways_Velocity=50, Forward_Velocity=0, Rotation_Velocity=0),
+        )
+        self.button_Move_RIGHT.grid(row=row_count, column=col_count, sticky="w")
+
+        row_count += 1
+
+        self.button_Rotate_LEFT = tk.Button(
+            self.frame,
+            height=1,
+            width=button_width,
+            text="Rotate Left",
+            command=lambda: robot.base.move(Sideways_Velocity=0, Forward_Velocity=0, Rotation_Velocity=50),
+        )
+        self.button_Rotate_LEFT.grid(row=row_count, column=col_count, sticky="w")
+
+        row_count += 1
+
+        self.button_Rotate_RIGHT = tk.Button(
+            self.frame,
+            height=1,
+            width=button_width,
+            text="Rotate Right",
+            command=lambda: robot.base.move(Sideways_Velocity=0, Forward_Velocity=0, Rotation_Velocity=-50),
+        )
+        self.button_Rotate_RIGHT.grid(row=row_count, column=col_count, sticky="w")
+
     def on_closing(self):
         time.sleep(1)
         self.root.destroy()  # This will close the window
@@ -889,7 +978,7 @@ class SaraGUI:
         return
     
 
-    def touch_sensors_callback(self):
+    def touch_sensors_head_callback(self):
         touchsensors = self.robot.head.touch_sensors.get_all_values()
 
         if touchsensors[0] > 0:
@@ -914,6 +1003,20 @@ class SaraGUI:
 
         return
 
+    def touch_sensors_body_callback(self):
+        touchsensors = self.robot.body.touch_sensors.get_all_values()
+
+        if touchsensors[0] > 0:
+            self.button_TOUCH_Left_Arm.config(bg="lime")
+        else:
+            self.button_TOUCH_Left_Arm.config(bg=self.frame.cget("bg"))            
+
+        if touchsensors[1] > 0:
+            self.button_TOUCH_Right_Arm.config(bg="lime")
+        else:
+            self.button_TOUCH_Right_Arm.config(bg=self.frame.cget("bg"))            
+
+        return
 
 def main():
     robot = SaraRobot(logging=False)
@@ -923,8 +1026,8 @@ def main():
     robot.body.motion_sensors.set_callback(gui.motion_sensors_callback)
     robot.body.battery.set_callback(gui.battery_callback)
     robot.body.compass.set_callback(gui.compass_callback)
-    robot.head.touch_sensors.set_callback(gui.touch_sensors_callback)
-
+    robot.head.touch_sensors.set_callback(gui.touch_sensors_head_callback)
+    robot.body.touch_sensors.set_callback(gui.touch_sensors_body_callback)  
 
     gui.run()
 
